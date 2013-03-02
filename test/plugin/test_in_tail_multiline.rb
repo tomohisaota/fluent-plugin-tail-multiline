@@ -19,33 +19,152 @@ class TailMultilineInputTest < Test::Unit::TestCase
     Fluent::Test::InputTestDriver.new(Fluent::TailMultilineInput).configure(conf)
   end
   
-  def test_emit
+  def test_emit_no_additional_option
     tmpFile = Tempfile.new("in_tail_multiline-")
-    puts tmpFile.path
-    File.open(tmpFile.path, "w") {|f|
-      f.puts "test1"
-      f.puts "test2"
-    }
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^[s|f] (?<message>.*)/
+        format_firstline ^[s|f] (?<message>.*)
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "f test1"
+          f.puts "s test2"
+          f.puts "f test3"
+          f.puts "f test4"
+          f.puts "s test5"
+          f.puts "s test6"
+          f.puts "f test7"
+          f.puts "s test8"
+        }
+        sleep 1
+      end
 
-    d = create_driver %[
-      path #{tmpFile.path}
-      tag test
-      format /(?<message>.*)/
-    ]
-
-    d.run do
-      sleep 1
-
-      File.open(tmpFile.path, "a") {|f|
-        f.puts "test3"
-        f.puts "test4"
-      }
-      sleep 1
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      assert_equal({"message"=>"test1"}, emits[0][2])
+      assert_equal({"message"=>"test2"}, emits[1][2])
+      assert_equal({"message"=>"test3"}, emits[2][2])
+      assert_equal({"message"=>"test4"}, emits[3][2])
+      assert_equal({"message"=>"test5"}, emits[4][2])
+      assert_equal({"message"=>"test6"}, emits[5][2])
+      assert_equal({"message"=>"test7"}, emits[6][2])
+      assert_equal({"message"=>"test8"}, emits[7][2])
+    ensure
+      tmpFile.close(true)
     end
-
-    emits = d.emits
-    assert_equal(true, emits.length > 0)
-    assert_equal({"message"=>"test3"}, emits[0][2])
-    assert_equal({"message"=>"test4"}, emits[1][2])   
   end
+  
+  def test_emit_with_rawdata
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^[s|f] (?<message>.*)/
+        format_firstline ^[s|f] (?<message>.*)
+        rawdata_key rawdata
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "f test1"
+          f.puts "s test2"
+          f.puts "f test3"
+          f.puts "f test4"
+          f.puts "s test5"
+          f.puts "s test6"
+          f.puts "f test7"
+          f.puts "s test8"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      assert_equal({"message"=>"test1","rawdata"=>"f test1"}, emits[0][2])
+      assert_equal({"message"=>"test2","rawdata"=>"s test2"}, emits[1][2])
+      assert_equal({"message"=>"test3","rawdata"=>"f test3"}, emits[2][2])
+      assert_equal({"message"=>"test4","rawdata"=>"f test4"}, emits[3][2])
+      assert_equal({"message"=>"test5","rawdata"=>"s test5"}, emits[4][2])
+      assert_equal({"message"=>"test6","rawdata"=>"s test6"}, emits[5][2])
+      assert_equal({"message"=>"test7","rawdata"=>"f test7"}, emits[6][2])
+      assert_equal({"message"=>"test8","rawdata"=>"s test8"}, emits[7][2])
+    ensure
+      tmpFile.close(true)
+    end
+  end
+  def test_emit_with_format_firstline
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^[s|f] (?<message>.*)/
+        format_firstline ^[s] (?<message>.*)
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "f test1"
+          f.puts "s test2"
+          f.puts "f test3"
+          f.puts "f test4"
+          f.puts "s test5"
+          f.puts "s test6"
+          f.puts "f test7"
+          f.puts "s test8"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      n = -1
+      assert_equal({"message"=>"test2"}, emits[0][2])
+      assert_equal({"message"=>"test5"}, emits[1][2])
+      assert_equal({"message"=>"test6"}, emits[2][2])
+      assert_equal({"message"=>"test8"}, emits[3][2])
+    ensure
+      tmpFile.close(true)
+    end
+  end
+  
+  def test_emit_with_format_firstline_with_rawdata
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^[s|f] (?<message>.*)/
+        format_firstline ^[s] (?<message>.*)
+        rawdata_key rawdata
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "f test1"
+          f.puts "s test2"
+          f.puts "f test3"
+          f.puts "f test4"
+          f.puts "s test5"
+          f.puts "s test6"
+          f.puts "f test7"
+          f.puts "s test8"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      n = -1
+      assert_equal({"message"=>"test2","rawdata"=>"s test2\nf test3\nf test4"}, emits[0][2])
+      assert_equal({"message"=>"test5","rawdata"=>"s test5"}, emits[1][2])
+      assert_equal({"message"=>"test6","rawdata"=>"s test6\nf test7"}, emits[2][2])
+      assert_equal({"message"=>"test8","rawdata"=>"s test8"}, emits[3][2])
+    ensure
+      tmpFile.close(true)
+    end
+  end
+  
+  
 end
