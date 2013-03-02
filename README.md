@@ -1,24 +1,28 @@
-# Fluent::Plugin::Tail::Multiline
+# Fluent::Plugin::Tail-Multiline
 
-TODO: Write a gem description
+Tail-Multiline plugin extends built-in tail plugin with following features
++ Additional RegEx parameter to detect first line
++ Option to save raw data
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Use ruby gem as :
 
     gem 'fluent-plugin-tail-multiline'
 
-And then execute:
+Or, if you're using td-client, you can call td-client's gem
 
-    $ bundle
+    $ /usr/lib64/fluent/ruby/bin/gem install fluent-plugin-tail-multiline
 
-Or install it yourself as:
+## Base Configuration
+Tail-Multiline extends [tail plugin](http://docs.fluentd.org/categories/in_tail).
 
-    $ gem install fluent-plugin-tail-multiline
-
-## Usage
-
-TODO: Write usage instructions here
+## Configuration
+### Parameters
+ name                 | type                            | description
+----------------------|---------------------------------|---------------------------
+format_firstline      | string(default = format)        | RegEx to detect first line of multiple line log
+rawdata_key           | string(default = null)          | Store raw data with given key
 
 ## Contributing
 
