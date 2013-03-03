@@ -166,5 +166,40 @@ class TailMultilineInputTest < Test::Unit::TestCase
     end
   end
   
+  def test_multilinelog
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^s (?<message1>.*)(\\nf (?<message2>.*))?(\\nf (?<message3>.*))?/
+        format_firstline ^[s]
+        rawdata_key rawdata
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "f test1"
+          f.puts "s test2"
+          f.puts "f test3"
+          f.puts "f test4"
+          f.puts "s test5"
+          f.puts "s test6"
+          f.puts "f test7"
+          f.puts "s test8"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      n = -1
+      assert_equal({"message1"=>"test2","message2"=>"test3","message3"=>"test4","rawdata"=>"s test2\nf test3\nf test4"}, emits[0][2])
+      assert_equal({"message1"=>"test5","rawdata"=>"s test5"}, emits[1][2])
+      assert_equal({"message1"=>"test6","message2"=>"test7","rawdata"=>"s test6\nf test7"}, emits[2][2])
+      assert_equal({"message1"=>"test8","rawdata"=>"s test8"}, emits[3][2])
+    ensure
+      tmpFile.close(true)
+    end
+  end
   
 end
