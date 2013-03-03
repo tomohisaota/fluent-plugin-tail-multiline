@@ -17,7 +17,23 @@ module Fluent
     
     def configure(conf)
       super
-      @regex_firstline = Regexp.new(@format_firstline)
+      if @format_firstline
+        # Use custom matcher for 1st line
+        if @format_firstline[0] == '/' && @format_firstline[@format_firstline.length-1] == '/'
+          regEx = Regexp.new(@format_firstline[1..-2])
+          @regex_firstline = Proc.new{ |line|
+            regEx.match(line)
+          }
+        else
+          raise Fluent::ConfigError.new("format_firstline format error")
+        end
+      else
+        # Use in-tail matcher
+        @regex_firstline = Proc.new{ |line|
+          time,record = @parser.parse(line)
+          time && record
+        }
+      end
     end
     
     def receive_lines(lines)
@@ -26,7 +42,7 @@ module Fluent
       @locker.synchronize do
         lines.each {|line|
           begin
-            if @regex_firstline.match(line)
+            if @regex_firstline.call(line)
               time, record = parse_logbuf(@logbuf)
               if time && record
                 es.add(time, record)

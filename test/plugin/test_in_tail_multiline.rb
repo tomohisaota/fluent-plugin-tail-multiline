@@ -26,7 +26,6 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^[s|f] (?<message>.*)/
-        format_firstline ^[s|f] (?<message>.*)
       ]
       d.run do
         File.open(tmpFile.path, "w") {|f|
@@ -64,7 +63,6 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^[s|f] (?<message>.*)/
-        format_firstline ^[s|f] (?<message>.*)
         rawdata_key rawdata
       ]
       d.run do
@@ -102,7 +100,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^[s|f] (?<message>.*)/
-        format_firstline ^[s] (?<message>.*)
+        format_firstline /^[s] (?<message>.*)/
       ]
       d.run do
         File.open(tmpFile.path, "w") {|f|
@@ -137,7 +135,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^[s|f] (?<message>.*)/
-        format_firstline ^[s] (?<message>.*)
+        format_firstline /^[s] (?<message>.*)/
         rawdata_key rawdata
       ]
       d.run do
@@ -173,7 +171,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^s (?<message1>.*)(\\nf (?<message2>.*))?(\\nf (?<message3>.*))?/
-        format_firstline ^[s]
+        format_firstline /^[s]/
         rawdata_key rawdata
       ]
       d.run do
