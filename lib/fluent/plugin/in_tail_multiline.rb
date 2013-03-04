@@ -39,7 +39,7 @@ module Fluent
         return true
       end
       
-      def match(text)
+      def match_firstline(text)
         @regex.match(text)
       end
     end
@@ -68,7 +68,7 @@ module Fluent
       es = MultiEventStream.new
       @locker.synchronize do
         lines.each {|line|
-            if @parser.match(line)
+            if @parser.match_firstline(line)
               time, record = parse_logbuf(@logbuf)
               if time && record
                 es.add(time, record)
