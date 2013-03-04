@@ -1,6 +1,49 @@
 module Fluent
   require 'fluent/plugin/in_tail'
   class TailMultilineInput < TailInput
+    
+    class MultilineTextParser < TextParser
+      def configure(conf, required=true)
+        format = conf['format']
+        if format == nil
+          raise ConfigError, "'format' parameter is required"
+        elsif format[0] != ?/ || format[format.length-1] != ?/ 
+          raise ConfigError, "'format' should be RegEx. Template is not supported in multiline mode"
+        end
+        
+        begin
+          @regex = Regexp.new(format[1..-2],Regexp::MULTILINE)
+          if @regex.named_captures.empty?
+            raise "No named captures"
+          end
+        rescue
+          raise ConfigError, "Invalid regexp in format '#{format[1..-2]}': #{$!}"
+        end
+
+        @parser = RegexpParser.new(@regex)
+
+        if @parser.respond_to?(:configure)
+          @parser.configure(conf)
+        end
+
+        format_firstline = conf['format_firstline']
+        if format_firstline
+          # Use custom matcher for 1st line
+          if format_firstline[0] == '/' && format_firstline[format_firstline.length-1] == '/'
+            @regex = Regexp.new(format_firstline[1..-2])
+          else
+            raise ConfigError, "Invalid regexp in format_firstline '#{format_firstline[1..-2]}': #{$!}"
+          end
+        end
+
+        return true
+      end
+      
+      def match(text)
+        @regex.match(text)
+      end
+    end
+    
     Plugin.register_input('tail_multiline', self)
     
     config_param :format, :string
@@ -15,25 +58,9 @@ module Fluent
       @logbuf_flusher = CallLater::new
     end
     
-    def configure(conf)
-      super
-      if @format_firstline
-        # Use custom matcher for 1st line
-        if @format_firstline[0] == '/' && @format_firstline[@format_firstline.length-1] == '/'
-          regEx = Regexp.new(@format_firstline[1..-2])
-          @regex_firstline = Proc.new{ |line|
-            regEx.match(line)
-          }
-        else
-          raise Fluent::ConfigError.new("format_firstline format error")
-        end
-      else
-        # Use in-tail matcher
-        @regex_firstline = Proc.new{ |line|
-          time,record = @parser.parse(line)
-          time && record
-        }
-      end
+    def configure_parser(conf)
+      @parser = MultilineTextParser.new
+      @parser.configure(conf)
     end
     
     def receive_lines(lines)
@@ -41,8 +68,7 @@ module Fluent
       es = MultiEventStream.new
       @locker.synchronize do
         lines.each {|line|
-          begin
-            if @regex_firstline.call(line)
+            if @parser.match(line)
               time, record = parse_logbuf(@logbuf)
               if time && record
                 es.add(time, record)
@@ -51,10 +77,6 @@ module Fluent
             else
               @logbuf += line if(@logbuf)
             end
-          rescue
-            $log.warn line.dump, :error=>$!.to_s
-            $log.debug_backtrace
-          end
         }
       end
       unless es.empty?
@@ -89,7 +111,12 @@ module Fluent
     def parse_logbuf(buf)
       return nil,nil unless buf
       buf.chomp!
-      time, record = parse_line(buf)
+      begin
+        time, record = @parser.parse(buf)
+      rescue
+        $log.warn line.dump, :error=>$!.to_s
+        $log.debug_backtrace
+      end
       return nil,nil unless time && record
       record[@rawdata_key] = buf if @rawdata_key
       return time, record

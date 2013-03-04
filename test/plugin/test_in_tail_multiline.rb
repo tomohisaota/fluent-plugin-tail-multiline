@@ -100,7 +100,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^[s|f] (?<message>.*)/
-        format_firstline /^[s] (?<message>.*)/
+        format_firstline /^[s]/
       ]
       d.run do
         File.open(tmpFile.path, "w") {|f|
@@ -119,9 +119,9 @@ class TailMultilineInputTest < Test::Unit::TestCase
       emits = d.emits
       assert_equal(true, emits.length > 0)
       n = -1
-      assert_equal({"message"=>"test2"}, emits[0][2])
+      assert_equal({"message"=>"test2\nf test3\nf test4"}, emits[0][2])
       assert_equal({"message"=>"test5"}, emits[1][2])
-      assert_equal({"message"=>"test6"}, emits[2][2])
+      assert_equal({"message"=>"test6\nf test7"}, emits[2][2])
       assert_equal({"message"=>"test8"}, emits[3][2])
     ensure
       tmpFile.close(true)
@@ -135,7 +135,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^[s|f] (?<message>.*)/
-        format_firstline /^[s] (?<message>.*)/
+        format_firstline /^[s]/
         rawdata_key rawdata
       ]
       d.run do
@@ -155,9 +155,9 @@ class TailMultilineInputTest < Test::Unit::TestCase
       emits = d.emits
       assert_equal(true, emits.length > 0)
       n = -1
-      assert_equal({"message"=>"test2","rawdata"=>"s test2\nf test3\nf test4"}, emits[0][2])
+      assert_equal({"message"=>"test2\nf test3\nf test4","rawdata"=>"s test2\nf test3\nf test4"}, emits[0][2])
       assert_equal({"message"=>"test5","rawdata"=>"s test5"}, emits[1][2])
-      assert_equal({"message"=>"test6","rawdata"=>"s test6\nf test7"}, emits[2][2])
+      assert_equal({"message"=>"test6\nf test7","rawdata"=>"s test6\nf test7"}, emits[2][2])
       assert_equal({"message"=>"test8","rawdata"=>"s test8"}, emits[3][2])
     ensure
       tmpFile.close(true)
@@ -170,7 +170,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
       d = create_driver %[
         path #{tmpFile.path}
         tag test
-        format /^s (?<message1>.*)(\\nf (?<message2>.*))?(\\nf (?<message3>.*))?/
+        format /^s (?<message1>[^\\n]+)(\\nf (?<message2>[^\\n]+))?(\\nf (?<message3>.*))?/
         format_firstline /^[s]/
         rawdata_key rawdata
       ]
