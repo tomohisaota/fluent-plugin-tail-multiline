@@ -4,10 +4,10 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-tail-multiline"
-  gem.version       = "0.1.0"
+  gem.version       = "0.1.1"
   gem.authors       = ["Tomohisa Ota"]
   gem.email         = ["tomohisa.ota+github@gmail.com"]
-  gem.description   = ""
+  gem.description   = "Extend tail plugin to support log with multiple line"
   gem.summary       = gem.description
   gem.homepage      = "http://github.com/tomohisaota/fluent-plugin-tail-multiline"
 
