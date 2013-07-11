@@ -45,17 +45,36 @@ module Fluent
     end
     
     Plugin.register_input('tail_multiline', self)
+
+    FORMAT_MAX_NUM = 20
     
     config_param :format, :string
     config_param :format_firstline, :string, :default => nil
     config_param :rawdata_key, :string, :default => nil
     config_param :auto_flush_sec, :integer, :default => 1
+    (1..FORMAT_MAX_NUM).each do |i|
+      config_param "format#{i}".to_sym, :string, :default => nil
+    end
     
     def initialize
       super
       @locker = Monitor.new
       @logbuf = nil
       @logbuf_flusher = CallLater::new
+    end
+
+    def configure(conf)
+      if conf['format'].nil?
+        formats = (1..FORMAT_MAX_NUM).map {|i|
+          conf["format#{i}"]
+        }.delete_if {|format|
+          format.nil?
+        }.map {|format|
+          format[1..-2]
+        }.join
+        conf['format'] = '/' + formats + '/'
+      end
+      super
     end
     
     def configure_parser(conf)
