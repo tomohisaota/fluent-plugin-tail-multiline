@@ -200,4 +200,76 @@ class TailMultilineInputTest < Test::Unit::TestCase
     end
   end
   
+  def test_multilinelog_with_serial_number_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format1 /^s (?<message1>[^\\n]+)\\n?/
+        format2 /(f (?<message2>[^\\n]+)\\n?)?/
+        format3 /(f (?<message3>.*))?/
+        format_firstline /^[s]/
+        rawdata_key rawdata
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "f test1"
+          f.puts "s test2"
+          f.puts "f test3"
+          f.puts "f test4"
+          f.puts "s test5"
+          f.puts "s test6"
+          f.puts "f test7"
+          f.puts "s test8"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      n = -1
+      assert_equal({"message1"=>"test2","message2"=>"test3","message3"=>"test4","rawdata"=>"s test2\nf test3\nf test4"}, emits[0][2])
+      assert_equal({"message1"=>"test5","rawdata"=>"s test5"}, emits[1][2])
+      assert_equal({"message1"=>"test6","message2"=>"test7","rawdata"=>"s test6\nf test7"}, emits[2][2])
+      assert_equal({"message1"=>"test8","rawdata"=>"s test8"}, emits[3][2])
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
+  def test_multilinelog_with_invalid_number_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      e = assert_raise(Fluent::ConfigError) {
+        create_driver %[
+          path #{tmpFile.path}
+          tag test
+          format21 /(?<message1>.*)/
+          format22 /(?<message2>.*)/
+        ]
+      }
+      assert_equal(e.message, "invalid number formats (valid format number:1-20):format21,format22")
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
+  def test_multilinelog_with_jump_of_number_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      e = assert_raise(Fluent::ConfigError) {
+        create_driver %[
+          path #{tmpFile.path}
+          tag test
+          format1 /(?<message1>.*)/
+          format3 /(?<message2>.*)/
+        ]
+      }
+      assert_equal(e.message, "jump of format index found")
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
 end
