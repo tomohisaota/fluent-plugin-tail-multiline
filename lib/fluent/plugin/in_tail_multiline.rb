@@ -127,8 +127,8 @@ module Fluent
   class CallLater 
     def initialize
       @locker = Monitor::new
-      @thread = Thread.new(&method(:run))
       initExecBlock()
+      @thread = Thread.new(&method(:run))
     end
     
     def call_later(delay,&block)
