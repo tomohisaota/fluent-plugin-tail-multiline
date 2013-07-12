@@ -238,4 +238,38 @@ class TailMultilineInputTest < Test::Unit::TestCase
     end
   end
 
+  def test_multilinelog_with_invalid_number_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      e = assert_raise(Fluent::ConfigError) {
+        create_driver %[
+          path #{tmpFile.path}
+          tag test
+          format21 /(?<message1>.*)/
+          format22 /(?<message2>.*)/
+        ]
+      }
+      assert_equal(e.message, "invalid number formats (valid format number:1-20):format21,format22")
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
+  def test_multilinelog_with_jump_of_number_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      e = assert_raise(Fluent::ConfigError) {
+        create_driver %[
+          path #{tmpFile.path}
+          tag test
+          format1 /(?<message1>.*)/
+          format3 /(?<message2>.*)/
+        ]
+      }
+      assert_equal(e.message, "jump of format index found")
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
 end

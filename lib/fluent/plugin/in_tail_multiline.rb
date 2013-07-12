@@ -65,6 +65,14 @@ module Fluent
 
     def configure(conf)
       if conf['format'].nil?
+        invalids = conf.keys.select{|k| k =~ /^format(\d+)$/ and not (1..FORMAT_MAX_NUM).include?($1.to_i)}
+        if invalids.size > 0
+          raise ConfigError, "invalid number formats (valid format number:1-#{FORMAT_MAX_NUM}):" + invalids.join(",")
+        end
+        format_index_list = conf.keys.select{|s| s =~ /^format\d+$/}.map{|v| (/^format(\d+)$/.match(v))[1].to_i}
+        if (1..format_index_list.max).map{|i| conf["format#{i}"]}.include?(nil)
+          raise Fluent::ConfigError, "jump of format index found"
+        end
         formats = (1..FORMAT_MAX_NUM).map {|i|
           conf["format#{i}"]
         }.delete_if {|format|
