@@ -155,7 +155,7 @@ module Fluent
       begin
         time, record = @parser.parse(buf)
       rescue
-        $log.warn line.dump, :error=>$!.to_s
+        $log.warn buf.dump, :error=>$!.to_s
         $log.debug_backtrace
       end
       return nil,nil unless time && record
