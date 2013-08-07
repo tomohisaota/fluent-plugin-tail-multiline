@@ -52,6 +52,7 @@ module Fluent
     config_param :format_firstline, :string, :default => nil
     config_param :rawdata_key, :string, :default => nil
     config_param :auto_flush_sec, :integer, :default => 1
+    config_param :read_newfile_from_head, :bool, :default => false
     (1..FORMAT_MAX_NUM).each do |i|
       config_param "format#{i}".to_sym, :string, :default => nil
     end
@@ -83,6 +84,19 @@ module Fluent
         conf['format'] = '/' + formats + '/'
       end
       super
+      if read_newfile_from_head and @pf
+        # Tread new file as rotated file
+        # Use temp file inode number as previos logfile
+        @paths.map {|path|
+          pe = @pf[path]
+          if pe.read_inode == 0
+            require 'tempfile'
+            tmpfile = Tempfile.new('gettempinode')
+            pe.update(File.stat(tmpfile).ino, 0)
+            tmpfile.unlink
+          end
+        }
+      end
     end
     
     def configure_parser(conf)

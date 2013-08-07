@@ -28,6 +28,7 @@ type                  | string (required)               | type of plugin should 
 format_firstline      | string(default = format)        | RegEx to detect first line of multiple line log, no name capture required
 rawdata_key           | string(default = null)          | Store raw data with given key
 format{1..20}         | string(default = null)          | The substitute for too long `format`
+read_newfile_from_head| bool(default = false)           | Read new logfile from head
 
 ## Examples
 ### Java log with exception
