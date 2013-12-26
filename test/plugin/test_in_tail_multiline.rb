@@ -26,10 +26,11 @@ class TailMultilineInputTest < Test::Unit::TestCase
         path #{tmpFile.path}
         tag test
         format /^(?<time>[^ ]* [^ ]*) [s|f] (?<message>.*)/
+        time_format %m-%d-%Y %H:%M:%S
       ]
       d.run do
         File.open(tmpFile.path, "w") {|f|
-          f.puts "2013-12-24 10:20:30 f test1"
+          f.puts "12-24-2012 10:20:30 f test1"
         }
         sleep 1
       end
@@ -39,7 +40,7 @@ class TailMultilineInputTest < Test::Unit::TestCase
       assert_equal({"message"=>"test1"}, emits[0][2])
 
       t = Time.at(emits[0][1])
-      assert_equal(2013, t.year)
+      assert_equal(2012, t.year)
       assert_equal(12, t.month)
       assert_equal(24, t.day)
       assert_equal(10, t.hour)
