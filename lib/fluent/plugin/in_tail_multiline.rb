@@ -20,11 +20,7 @@ module Fluent
           raise ConfigError, "Invalid regexp in format '#{format[1..-2]}': #{$!}"
         end
 
-        @parser = RegexpParser.new(@regex)
-
-        if @parser.respond_to?(:configure)
-          @parser.configure(conf)
-        end
+        @parser = RegexpParser.new(@regex, conf)
 
         format_firstline = conf['format_firstline']
         if format_firstline

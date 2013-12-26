@@ -19,6 +19,69 @@ class TailMultilineInputTest < Test::Unit::TestCase
     Fluent::Test::InputTestDriver.new(Fluent::TailMultilineInput).configure(conf)
   end
   
+  def test_emit_time_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^(?<time>[^ ]* [^ ]*) [s|f] (?<message>.*)/
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "2013-12-24 10:20:30 f test1"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      assert_equal({"message"=>"test1"}, emits[0][2])
+
+      t = Time.at(emits[0][1])
+      assert_equal(2013, t.year)
+      assert_equal(12, t.month)
+      assert_equal(24, t.day)
+      assert_equal(10, t.hour)
+      assert_equal(20, t.min)
+      assert_equal(30, t.sec)
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
+  def test_emit_custom_time_format
+    tmpFile = Tempfile.new("in_tail_multiline-")
+    begin
+      d = create_driver %[
+        path #{tmpFile.path}
+        tag test
+        format /^(?<time>[^ ]* [^ ]*) [s|f] (?<message>.*)/
+        time_format %m-%d %H:%M:%S
+      ]
+      d.run do
+        File.open(tmpFile.path, "w") {|f|
+          f.puts "12-24 10:20:30 f test1"
+        }
+        sleep 1
+      end
+
+      emits = d.emits
+      assert_equal(true, emits.length > 0)
+      assert_equal({"message"=>"test1"}, emits[0][2])
+
+      t = Time.at(emits[0][1])
+      assert_equal(Time.new.year, t.year)
+      assert_equal(12, t.month)
+      assert_equal(24, t.day)
+      assert_equal(10, t.hour)
+      assert_equal(20, t.min)
+      assert_equal(30, t.sec)
+    ensure
+      tmpFile.close(true)
+    end
+  end
+
   def test_emit_no_additional_option
     tmpFile = Tempfile.new("in_tail_multiline-")
     begin
