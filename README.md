@@ -1,4 +1,4 @@
-# Fluent::Plugin::Tail-Multiline
+# Fluent::Plugin::Tail, a plugin for [Fluentd](http://fluentd.org)-Multiline
 
 Tail-Multiline plugin extends built-in tail plugin with following features
 + Support log with multiple line output such as stacktrace
