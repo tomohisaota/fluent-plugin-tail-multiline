@@ -1,3 +1,6 @@
+**Deprecated : most of the tail-multiline features had been merged to main in_tail plugin. This plugin is not maintained anymore!!!!!**
+---
+
 # Fluent::Plugin::Tail-Multiline, a plugin for [Fluentd](http://fluentd.org)
 
 Tail-Multiline plugin extends built-in tail plugin with following features
